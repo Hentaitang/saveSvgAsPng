@@ -1,4 +1,4 @@
-(function() {
+(function () {
   const out$ = typeof exports != 'undefined' && exports || typeof define != 'undefined' && {} || this || window;
   if (typeof define !== 'undefined') define('save-svg-as-png', [], () => out$);
   out$.default = out$;
@@ -20,7 +20,7 @@
   const requireDomNode = el => {
     if (!isElement(el)) throw new Error(`an HTMLElement or SVGElement is required; got ${el}`);
   };
-  const isExternal = url => url && url.lastIndexOf('http',0) === 0 && url.lastIndexOf(window.location.host) === -1;
+  const isExternal = url => url && url.lastIndexOf('http', 0) === 0 && url.lastIndexOf(window.location.host) === -1;
 
   const getFontMimeTypeFromUrl = fontUrl => {
     const formats = Object.keys(fontFormats)
@@ -54,7 +54,12 @@
       height: height || getDimension(el, clone, 'height')
     };
     else if (el.getBBox) {
-      const {x, y, width, height} = el.getBBox();
+      const {
+        x,
+        y,
+        width,
+        height
+      } = el.getBBox();
       return {
         width: x + width,
         height: y + height
@@ -65,10 +70,10 @@
   const reEncode = data =>
     decodeURIComponent(
       encodeURIComponent(data)
-        .replace(/%([0-9A-F]{2})/g, (match, p1) => {
-          const c = String.fromCharCode(`0x${p1}`);
-          return c === '%' ? '%25' : c;
-        })
+      .replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        const c = String.fromCharCode(`0x${p1}`);
+        return c === '%' ? '%25' : c;
+      })
     );
 
   const uriToBlob = uri => {
@@ -79,14 +84,16 @@
     for (let i = 0; i < byteString.length; i++) {
       intArray[i] = byteString.charCodeAt(i);
     }
-    return new Blob([buffer], {type: mimeString});
+    return new Blob([buffer], {
+      type: mimeString
+    });
   };
 
   const query = (el, selector) => {
     if (!selector) return;
     try {
       return el.querySelector(selector) || el.parentNode && el.parentNode.querySelector(selector);
-    } catch(err) {
+    } catch (err) {
       console.warn(`Invalid CSS selector "${selector}"`, err);
     }
   };
@@ -100,9 +107,9 @@
     const url = (match && match[1]) || '';
     if (!url || url.match(/^data:/) || url === 'about:blank') return;
     const fullUrl =
-      url.startsWith('../') ? `${href}/../${url}`
-      : url.startsWith('./') ? `${href}/.${url}`
-      : url;
+      url.startsWith('../') ? `${href}/../${url}` :
+      url.startsWith('./') ? `${href}/.${url}` :
+      url;
     return {
       text: rule.cssText,
       format: getFontMimeTypeFromUrl(fullUrl),
@@ -122,7 +129,14 @@
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.src = href;
-        img.onerror = () => reject(new Error(`Could not load ${href}`));
+        img.onerror = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', canvas.toDataURL('image/png'));
+          resolve(true);
+          reject(new Error(`Could not load ${href}`))
+        };
         img.onload = () => {
           canvas.width = img.width;
           canvas.height = img.height;
@@ -145,7 +159,7 @@
           // TODO: it may also be worth it to wait until fonts are fully loaded before
           // attempting to rasterize them. (e.g. use https://developer.mozilla.org/en-US/docs/Web/API/FontFaceSet)
           const fontInBase64 = arrayBufferToBase64(req.response);
-          const fontUri = font.text.replace(urlRegex, `url("data:${font.format};base64,${fontInBase64}")`)+'\n';
+          const fontUri = font.text.replace(urlRegex, `url("data:${font.format};base64,${fontInBase64}")`) + '\n';
           cachedFonts[font.url] = fontUri;
           resolve(fontUri);
         });
@@ -170,7 +184,10 @@
     if (cachedRules) return cachedRules;
     return cachedRules = Array.from(document.styleSheets).map(sheet => {
       try {
-        return {rules: sheet.cssRules, href: sheet.href};
+        return {
+          rules: sheet.cssRules,
+          href: sheet.href
+        };
       } catch (e) {
         console.warn(`Stylesheet could not be loaded: ${sheet.href}`, e);
         return {};
@@ -193,7 +210,10 @@
     const css = [];
     const detectFonts = typeof fonts === 'undefined';
     const fontList = fonts || [];
-    styleSheetRules().forEach(({rules, href}) => {
+    styleSheetRules().forEach(({
+      rules,
+      href
+    }) => {
       if (!rules) return;
       Array.from(rules).forEach(rule => {
         if (typeof rule.style != 'undefined') {
@@ -213,23 +233,28 @@
     requireDomNode(el);
     const {
       left = 0,
-      top = 0,
-      width: w,
-      height: h,
-      scale = 1,
-      responsive = false,
+        top = 0,
+        width: w,
+        height: h,
+        scale = 1,
+        responsive = false,
     } = options || {};
 
     return inlineImages(el).then(() => {
       let clone = el.cloneNode(true);
-      const {backgroundColor = 'transparent'} = options || {};
+      const {
+        backgroundColor = 'transparent'
+      } = options || {};
       clone.style.backgroundColor = backgroundColor;
-      const {width, height} = getDimensions(el, clone, w, h);
+      const {
+        width,
+        height
+      } = getDimensions(el, clone, w, h);
 
       if (el.tagName !== 'svg') {
         if (el.getBBox) {
           clone.setAttribute('transform', clone.getAttribute('transform').replace(/translate\(.*?\)/, ''));
-          const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           svg.appendChild(clone);
           clone = svg;
         } else {
@@ -271,7 +296,11 @@
         const src = outer.innerHTML.replace(/NS\d+:href/gi, 'xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href');
 
         if (typeof done === 'function') done(src, width, height);
-        else return {src, width, height};
+        else return {
+          src,
+          width,
+          height
+        };
       });
     });
   };
@@ -279,12 +308,16 @@
   out$.svgAsDataUri = (el, options, done) => {
     requireDomNode(el);
     const result = out$.prepareSvg(el, options)
-      .then(({src, width, height}) => {
-          const svgXml = `data:image/svg+xml;base64,${window.btoa(reEncode(doctype+src))}`;
-          if (typeof done === 'function') {
-              done(svgXml, width, height);
-          }
-          return svgXml;
+      .then(({
+        src,
+        width,
+        height
+      }) => {
+        const svgXml = `data:image/svg+xml;base64,${window.btoa(reEncode(doctype+src))}`;
+        if (typeof done === 'function') {
+          done(svgXml, width, height);
+        }
+        return svgXml;
       });
     return result;
   };
@@ -293,11 +326,15 @@
     requireDomNode(el);
     const {
       encoderType = 'image/png',
-      encoderOptions = 0.8,
-      canvg
+        encoderOptions = 0.8,
+        canvg
     } = options || {};
 
-    const convertToPng = ({src, width, height}) => {
+    const convertToPng = ({
+      src,
+      width,
+      height
+    }) => {
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       const pixelRatio = window.devicePixelRatio || 1;
@@ -360,8 +397,7 @@
         }
         saveLink.click();
         document.body.removeChild(saveLink);
-      }
-      else {
+      } else {
         window.open(uri, '_temp', 'menubar=no,toolbar=no,status=no');
       }
     }
